@@ -377,6 +377,8 @@ public class FTPRequest extends Thread {
 		port += Integer.parseInt(split[5]);
 
 		// 	Ouverture de la connexion
+		System.out.println(ip);
+		System.out.println(port);
 		this.transfert = new Socket(Inet4Address.getByName(ip), port);
 		envoyer(Tools.CONNECTION_OPENED + " Connexion ouverte.");
 	}
