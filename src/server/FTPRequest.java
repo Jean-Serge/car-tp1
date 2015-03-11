@@ -44,11 +44,14 @@ public class FTPRequest extends Thread {
 	 */
 	public FTPRequest(Socket con) {
 		super();
+		
 		this.con = con;
 		try {
+			
 			this.br = new BufferedReader(new InputStreamReader(
 					this.con.getInputStream()));
 			this.bw = new DataOutputStream(this.con.getOutputStream());
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -61,11 +64,11 @@ public class FTPRequest extends Thread {
 
 		try {
 			// On envoi le code indiquant que tout va bien.
-			envoyer(Tools.CONNECTION_OK);
+			envoyer(Tools.CONNECTION_OK + " Service ready for new user.");			
 			// On boucle pour lire le message envoyé par le client.
 			while (!termine) {
 				msg = this.br.readLine();
-
+				
 				// En cas de problème avec le Thread (TODO à améliorer)
 				if (msg == null)
 					return;
@@ -398,7 +401,7 @@ public class FTPRequest extends Thread {
 	 * @throws IOException
 	 */
 	private void envoyer(String msg) throws IOException {
-		this.bw.write((msg + "\n").getBytes());
+		this.bw.write((msg + "\r\n").getBytes());
 	}
 	
 	private boolean isHomeSubDir(File file) throws IOException{

@@ -36,7 +36,9 @@ public class Serveur {
 			try {
 				con = sock.accept();
 				System.out.println("Personne connectée.");
+
 				rq = new FTPRequest(con);
+		
 				rq.start();
 			} catch (IOException e) {
 				System.out.println("Problème lors de la connexion du client.");
