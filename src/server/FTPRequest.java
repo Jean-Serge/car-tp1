@@ -16,12 +16,11 @@ import util.Tools;
 import util.Identifier;
 
 /**
- * Classe permettant représentant une connexion.
- * Cette classe permet de traiter les différentes commandes transmises
- * au serveur.
+ * Classe permettant représentant une connexion. Cette classe permet de traiter
+ * les différentes commandes transmises au serveur.
  * 
  * @author Jean-Serge Monbailly
- *
+ * 
  */
 public class FTPRequest extends Thread {
 
@@ -34,8 +33,7 @@ public class FTPRequest extends Thread {
 
 	/*
 	 * ==========================================================================
-	 * Constructeurs 
-	 * ================================
+	 * Constructeurs ================================
 	 */
 
 	/**
@@ -44,14 +42,14 @@ public class FTPRequest extends Thread {
 	 */
 	public FTPRequest(Socket con) {
 		super();
-		
+
 		this.con = con;
 		try {
-			
+
 			this.br = new BufferedReader(new InputStreamReader(
 					this.con.getInputStream()));
 			this.bw = new DataOutputStream(this.con.getOutputStream());
-			
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -64,11 +62,11 @@ public class FTPRequest extends Thread {
 
 		try {
 			// On envoi le code indiquant que tout va bien.
-			envoyer(Tools.CONNECTION_OK + " Service ready for new user.");			
+			envoyer(Tools.CONNECTION_OK + " Service ready for new user.");
 			// On boucle pour lire le message envoyé par le client.
 			while (!termine) {
 				msg = this.br.readLine();
-				
+
 				// En cas de problème avec le Thread (TODO à améliorer)
 				if (msg == null)
 					return;
@@ -83,8 +81,7 @@ public class FTPRequest extends Thread {
 
 	/*
 	 * ==========================================================================
-	 * Commandes 
-	 * ================================
+	 * Commandes ================================
 	 */
 
 	/**
@@ -116,8 +113,10 @@ public class FTPRequest extends Thread {
 			processSYST();
 			break;
 		case Tools.CMD_STOR:
-			// 	Si l'utilisateur à indiqué le nom distant, on le transmet à la commande
-			processSTOR(split.length == 3 ? split[2] : split.length == 2 ? split[1] : null);
+			// Si l'utilisateur à indiqué le nom distant, on le transmet à la
+			// commande
+			processSTOR(split.length == 3 ? split[2]
+					: split.length == 2 ? split[1] : null);
 			break;
 		case Tools.CMD_RETR:
 			processRETR(split.length == 1 ? null : split[1]);
@@ -130,6 +129,9 @@ public class FTPRequest extends Thread {
 			break;
 		case Tools.CMD_PORT:
 			processPORT(split.length == 1 ? null : split[1]);
+			break;
+		case Tools.CMD_RMD:
+			processRMD(split.length == 1 ? null : split[1]);
 			break;
 		default:
 			envoyer(Tools.UNIMPLEMENTED_COMMAND + " Commande inconnue : "
@@ -158,8 +160,10 @@ public class FTPRequest extends Thread {
 		} else if (null == pass) {
 			envoyer(Tools.SYNTAX_ERROR
 					+ " Veuillez indiquer votre mot de passe.");
-		} else if (Identifier.LOGGER.identify(user, pass)) { // On vérifie que le mot de passe
-											// indiqué est le bon
+		} else if (Identifier.LOGGER.identify(user, pass)) { // On vérifie que
+																// le mot de
+																// passe
+			// indiqué est le bon
 			this.estIdentifie = true;
 			this.wd = Tools.ROOT + user + "/";
 			envoyer(Tools.PASSWORD_OK
@@ -208,64 +212,67 @@ public class FTPRequest extends Thread {
 		System.out.println("Fermé : " + this.con.isClosed());
 		this.termine = true;
 	}
-	
+
 	/**
 	 * Envoie au client la liste des fichiers du répertoire courant.
 	 * 
 	 * @throws IOException
 	 */
-	public void processLIST() throws IOException{
+	public void processLIST() throws IOException {
 		File file = new File(wd);
-		DataOutputStream dt = new DataOutputStream(this.transfert.getOutputStream());
+		DataOutputStream dt = new DataOutputStream(
+				this.transfert.getOutputStream());
 
 		envoyer(Tools.TRANSFERT_BEGIN);
-		for(String s : file.list()) 
-			dt.writeBytes(s+"\r\n");
-		
+		for (String s : file.list())
+			dt.writeBytes(s + "\r\n");
+
 		dt.close();
 		this.transfert.close();
-		
+
 		envoyer(Tools.TRANSFERT_OK + " Transfert terminé.");
 	}
-	
+
 	/**
-	 * Permet au client de télécharger le fichier indiqué (si il existe).
-	 * Gère les cas :
-	 * - filename null
-	 * - filename n'existe pas
-	 * - filename n'appartient pas à l'utilisateur
-	 * - filename est un répertoire
+	 * Permet au client de télécharger le fichier indiqué (si il existe). Gère
+	 * les cas : - filename null - filename n'existe pas - filename n'appartient
+	 * pas à l'utilisateur - filename est un répertoire
 	 * 
-	 * @param filename le nom du fichier à télécharger
+	 * @param filename
+	 *            le nom du fichier à télécharger
 	 * @throws IOException
 	 */
-	public void processRETR(String filename) throws IOException{
-		if(null == filename){
-			envoyer(Tools.SYNTAX_ERROR + " Veuillez indiquer le fichier à transférer.");
+	public void processRETR(String filename) throws IOException {
+		if (null == filename) {
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Veuillez indiquer le fichier à transférer.");
 			return;
 		}
-		File file = new File(wd+filename);
-		
-		//	On vérifie l'existence du fichier et les droits d'accès.
-		if(!file.exists() || !isHomeSubDir(file)){
-			envoyer(Tools.FILE_NOT_FOUND + " Le fichier "+ filename + " n'a pas été trouvé ou vous n'y avez pas accès.");
+		File file = new File(wd + filename);
+
+		// On vérifie l'existence du fichier et les droits d'accès.
+		if (!file.exists() || !isHomeSubDir(file)) {
+			envoyer(Tools.FILE_NOT_FOUND + " Le fichier " + filename
+					+ " n'a pas été trouvé ou vous n'y avez pas accès.");
 			return;
 		}
 
-		//	On ne transfert pas de répertoire
-		if(file.isDirectory()){
-			envoyer(Tools.UNAUTHORIZED_FILE + " Le fichier demandé est un répertoire.");
+		// On ne transfert pas de répertoire
+		if (file.isDirectory()) {
+			envoyer(Tools.UNAUTHORIZED_FILE
+					+ " Le fichier demandé est un répertoire.");
 			return;
 		}
-		
-		DataOutputStream dt = new DataOutputStream(this.transfert.getOutputStream());
+
+		DataOutputStream dt = new DataOutputStream(
+				this.transfert.getOutputStream());
 		FileInputStream is = new FileInputStream(file);
 		int c;
-		
+
 		envoyer(Tools.TRANSFERT_BEGIN);
-		while((c = is.read()) != -1)
+		while ((c = is.read()) != -1)
 			dt.write(c);
-		
+
 		dt.close();
 		is.close();
 		this.transfert.close();
@@ -274,49 +281,81 @@ public class FTPRequest extends Thread {
 	}
 
 	/**
-	 * Permet au client de stocker des fichiers sur le serveur distant.
-	 * Gère les cas :
-	 * - pathname null
-	 * - pathname n'appartient pas à l'utilisateur
-	 *
+	 * Permet au client de stocker des fichiers sur le serveur distant. Gère les
+	 * cas : - pathname null - pathname n'appartient pas à l'utilisateur
+	 * 
 	 * @param pathname
 	 * @throws IOException
 	 */
 	public void processSTOR(String pathname) throws IOException {
-		if(null == pathname){
-			envoyer(Tools.SYNTAX_ERROR + " Veuillez indiquer le fichier à transférer.");
+		if (null == pathname) {
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Veuillez indiquer le fichier à transférer.");
 			return;
 		}
 
-		// 	Eviter les problèmes de chemin
+		// Eviter les problèmes de chemin
 		File file = new File(wd + pathname);
-		
-		if(!isHomeSubDir(file))
-			envoyer(Tools.SYNTAX_ERROR + " Tentative d'accès à un répertoire non autorisé.");
-		
+
+		if (!isHomeSubDir(file))
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Tentative d'accès à un répertoire non autorisé.");
+
 		// Si le fichier n'existe pas on le créé
-		if(!file.getParentFile().exists())
+		if (!file.getParentFile().exists())
 			file.getParentFile().mkdirs();
 		if (!file.exists())
 			file.createNewFile();
-		else if(file.isDirectory()){
-			envoyer(Tools.INCORRECT_PATHNAME + " Chemin incorrect, vérifiez qu'il ne s'agisse pas d'un répertoire.");
+		else if (file.isDirectory()) {
+			envoyer(Tools.INCORRECT_PATHNAME
+					+ " Chemin incorrect, vérifiez qu'il ne s'agisse pas d'un répertoire.");
 			return;
 		}
 		// Le client peut commencer le transfert
 		FileOutputStream fo = new FileOutputStream(file);
 		envoyer(Tools.TRANSFERT_BEGIN);
-		
+
 		int car;
 		BufferedReader f = new BufferedReader(new InputStreamReader(
 				transfert.getInputStream()));
 		while (-1 != (car = f.read()))
-			fo.write((char)car);
+			fo.write((char) car);
 
 		f.close();
 		fo.close();
 
 		envoyer(Tools.TRANSFERT_OK + " Transfert terminé.");
+	}
+
+	/**
+	 * Permet au client de supprimer un fichier sur le serveur distant.
+	 * 
+	 * @param pathname
+	 *            le nom du fichier à supprimer
+	 * @throws IOException
+	 */
+	public void processRMD(String pathname) throws IOException {
+		if (null == pathname) {
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Veuillez indiquer le fichier à supprimer.");
+			return;
+		}
+
+		// Eviter les problèmes de chemin
+		File file = new File(wd + pathname);
+
+		if (!isHomeSubDir(file))
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Tentative d'accès à un répertoire non autorisé.");
+		
+		// Si le fichier n'existe pas on le créé
+		if (!file.getParentFile().exists() && !file.exists()){
+			envoyer(Tools.SYNTAX_ERROR + " Le fichier spécifié n'existe pas.");
+			return;
+		}
+
+		file.delete();	
+		envoyer(Tools.COMMAND_OK + " Fichier supprimé.");
 	}
 
 	public void processSYST() throws IOException {
@@ -327,7 +366,8 @@ public class FTPRequest extends Thread {
 	 * Permet au client de transmettre au serveur les informations pour ouvrir
 	 * la connexion nécessaire au transfert de fichiers (adresse + port).
 	 * 
-	 * @param msg les informations transmises par le client
+	 * @param msg
+	 *            les informations transmises par le client
 	 * @throws IOException
 	 */
 	public void processEPRT(String msg) throws IOException {
@@ -357,39 +397,40 @@ public class FTPRequest extends Thread {
 	 * @throws IOException
 	 */
 	public void processPORT(String msg) throws IOException {
-		if(null == msg){
-			envoyer(Tools.SYNTAX_ERROR + " Veuillez spécifiez les paramètres de la commande PORT.");
+		if (null == msg) {
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Veuillez spécifiez les paramètres de la commande PORT.");
 			return;
 		}
-		// 	Paramètres de la commandes
+		// Paramètres de la commandes
 		String[] split = msg.split(",");
-		if(split.length != 6){
-			envoyer(Tools.SYNTAX_ERROR + " Arguments de la commande PORT incorrects.");
+		if (split.length != 6) {
+			envoyer(Tools.SYNTAX_ERROR
+					+ " Arguments de la commande PORT incorrects.");
 			return;
 		}
-		
-		// 	Récupération de l'adress IP
+
+		// Récupération de l'adress IP
 		String ip = split[0];
-		for(int i = 1 ; i <= 3 ; i++){
+		for (int i = 1; i <= 3; i++) {
 			ip += "." + split[i];
 		}
-		
-		// 	Lecture du port
+
+		// Lecture du port
 		int port = Integer.parseInt(split[4]);
 		port *= 256;
 		port += Integer.parseInt(split[5]);
 
-		// 	Ouverture de la connexion
+		// Ouverture de la connexion
 		System.out.println(ip);
 		System.out.println(port);
 		this.transfert = new Socket(Inet4Address.getByName(ip), port);
 		envoyer(Tools.CONNECTION_OPENED + " Connexion ouverte.");
 	}
-	
+
 	/*
 	 * ==========================================================================
-	 * Fonctions utiles 
-	 * ================================
+	 * Fonctions utiles ================================
 	 */
 
 	/**
@@ -403,19 +444,19 @@ public class FTPRequest extends Thread {
 	private void envoyer(String msg) throws IOException {
 		this.bw.write((msg + "\r\n").getBytes());
 	}
-	
-	private boolean isHomeSubDir(File file) throws IOException{
-		// 	Retourne le chemin absolu du fichier (sans . et ..)
+
+	private boolean isHomeSubDir(File file) throws IOException {
+		// Retourne le chemin absolu du fichier (sans . et ..)
 		String path = file.getCanonicalPath();
-		
+
 		String home = Tools.ROOT + user + "/";
 		File f = new File(home);
 		home = f.getCanonicalPath();
-		
-//		System.out.println("Path : " + path);
-//		System.out.println("Home : " + home);
-		
+
+		// System.out.println("Path : " + path);
+		// System.out.println("Home : " + home);
+
 		return path.startsWith(home);
-		
+
 	}
 }

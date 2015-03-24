@@ -35,6 +35,8 @@ public class Tools {
 	public static final String CMD_PORT = "PORT";
 	
 	public static final String CMD_LIST = "LIST";
+
+	public static final String CMD_RMD = "RMD";
 	
 	// 	=====================  Réponses  =====================
 	public static final String CONNECTION_OK = "220";
